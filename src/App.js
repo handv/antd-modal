@@ -1,26 +1,57 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+import { Button} from 'antd'
+import Modal from './components/modal'
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+class App extends React.Component {
+  state = {visible: false}
+
+  showModal = () => {
+    this.setState({
+      visible: true
+    })
+  }
+
+  handleOk = e => {
+    console.log(e)
+    this.setState({
+      visible: false
+    })
+  }
+
+  handleCancel = e => {
+    console.log(e)
+    this.setState({
+      visible: false
+    })
+  }
+
+  renderContent = () => (
+    <React.Fragment>
+      <img src="http://ydschool-online.nos.netease.com/1551365087638timg.jpeg" alt=""/>
+      <p>你需要帮助小蜜蜂采集2份花粉，制作4份蜂蜜</p>
+    </React.Fragment>
+  )
+
+  render() {
+    return (
+      <div className="container">
+        <Button type="primary" onClick={this.showModal}>
+          {this.state.visible ? 'Close' : 'Open'} Modal
+        </Button>
+        <Modal
+          title="Basic Modal"
+          visible={this.state.visible}
+          onOk={this.handleOk}
+          onCancel={this.handleCancel}
         >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+          <p>Some contents...</p>
+          <p>Some contents...</p>
+          <p>Some contents...</p>
+        </Modal>
+      </div>
+    )
+  }
 }
 
 export default App;

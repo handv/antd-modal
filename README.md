@@ -1,68 +1,121 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## :bulb: antd modal源码解析
 
-## Available Scripts
+antd modal弹窗模块，是基于[rc-dialog](https://github.com/react-component/dialog)进行二次开发的。代码部分在`src/components/modal`中就是modal部分的源码。
 
-In the project directory, you can run:
+#### rc-dialog参数
 
-### `npm start`
+<table class="table table-bordered table-striped">
+    <thead>
+    <tr>
+        <th style="width: 100px;">name</th>
+        <th style="width: 50px;">type</th>
+        <th style="width: 50px;">default</th>
+        <th>description</th>
+    </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>getContainer</td>
+          <td>HTMLElement | () => HTMLElement | Selectors | false</td>
+          <td>document.body</td>
+          <td>指定 Modal 挂载的 HTML 节点, false 为挂载在当前 dom</td>
+        </tr>
+        <tr>
+          <td>prefixCls</td>
+          <td>string</td>
+          <td>rc-dialog</td>
+          <td>dialog节点的类名前缀</td>
+        </tr>
+        <tr>
+          <td>wrapClassName</td>
+          <td>string</td>
+          <td>无</td>
+          <td>对话框外层容器的类名</td>
+        </tr>
+        <tr>
+          <td>footer</td>
+          <td>string|ReactNode</td>
+          <td>确定取消按钮</td>
+          <td>底部内容，当不需要默认底部按钮时，可以设为 footer={null}</td>
+        </tr>
+        <tr>
+          <td>visible</td>
+          <td>boolean</td>
+          <td>false</td>
+          <td>对话框是否可见</td>
+        </tr>
+        <tr>
+          <td>mousePosition</td>
+          <td>{x:number,y:number}</td>
+          <td>无</td>
+          <td>设置当前鼠标的坐标pageX和pageY</td>
+        </tr>
+        <tr>
+          <td>onClose</td>
+          <td>function</td>
+          <td>无</td>
+          <td>点击关闭图标或蒙层时调用</td>
+        </tr>
+        <tr>
+          <td>closeIcon</td>
+          <td>ReactNode</td>
+          <td>无</td>
+          <td>自定义关闭图标</td>
+        </tr>
+    </tbody>
+</table>
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+#### 原理
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+- footer
 
-### `npm test`
+modal有一个默认footer，带`确定`和`取消`的两个`ActionButton`
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- ActionButton
 
-### `npm run build`
+二次封装后的`antd-Button`，带一个onClick方法
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+onClick = () => {
+  const { actionFn, closeModal } = this.props;
+  if (actionFn) {
+    let ret;
+    if (actionFn.length) {
+      ret = actionFn(closeModal);
+    } else {
+      ret = actionFn();
+      if (!ret) {
+        closeModal();
+      }
+    }
+    if (ret && ret.then) {
+      this.setState({ loading: true });
+      ret.then(
+        (...args) => {
+          // It's unnecessary to set loading=false, for the Modal will be unmounted after close.
+          // this.setState({ loading: false });
+          closeModal(...args);
+        },
+        (e) => {
+          // Emit error when catch promise reject
+          // eslint-disable-next-line no-console
+          console.error(e);
+          // See: https://github.com/ant-design/ant-design/issues/6183
+          this.setState({ loading: false });
+        },
+      );
+    }
+  } else {
+    closeModal();
+  }
+};
+```
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+- Modal.info / Modal.error / Modal.warn / Modal.success
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+代码见`src/components/modal/index.js`, footer={null}
 
-### `npm run eject`
+此部分实现了一个confirm(...props)方法。
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+  - confirm里有个visible的参数，还有一个render的方法。在执行confirm()的时候，会调用render()生成一个<rc-dialog visible={true} />
+  - confirm里还有一个close方法，在点击右上角关闭的时候，会调用close(),生成一个<rc-dialog visible={false} />
